@@ -1,0 +1,381 @@
+openapi: 3.0.3
+info:
+  version: 0.1.0
+  title: Social Network API
+  description: The rest api design
+  license:
+    name: MIT
+externalDocs:
+  description: Find out more in GitHub repo
+  url: https://github.com/DavidRomanovizc/system-design
+paths:
+  /users/{user_id}/friends:
+    get:
+      tags:
+        - friends
+      summary: Fetch all friends of user
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '403':
+          description: Access to the friend list is forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Access to this user's friend list is restricted due to privacy settings"
+                  reason:
+                    type: string
+                    example: "privacy_settings"
+                  required_permissions:
+                    type: string
+                    example: "friend_list_access"
+    post:
+      tags:
+        - friends
+      summary: Add a friend
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user who is adding a friend
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: Friend added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Friend added successfully"
+                  friend_id:
+                    type: integer
+                    example: 12345678
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Authentication required to add a friend"
+                  action:
+                    type: string
+                    example: "login"
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "You do not have permission to add this user as a friend"
+                  reason:
+                    type: string
+                    example: "friend_request_restricted"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found."
+                  user_id:
+                    type: integer
+                    example: 12345678
+        '409':
+          description: Conflict - Friend request already sent or user is already a friend
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Friend request already sent or user is already in your friend list"
+                  status:
+                    type: string
+                    example: "already_friends"
+  /users/{friend_id}:
+    delete:
+      tags:
+        - friends
+      summary: Delete friend
+      parameters:
+        - name: friend_id
+          in: path
+          description: friend_id that needs to be deleted from user
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Friend delete successfully
+        '422':
+          description: Invalid friend_id supplied
+        '404':
+          description: Friend not found
+  /users/{user_id}:
+    get:
+      tags:
+        - Users
+      summary: Fetch user profile along with their posts
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  posts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Post'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found."
+                  user_id:
+                    type: integer
+                    example: 12345678
+  /feeds:
+    post:
+      tags:
+        - Feeds
+      summary: Publish a post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Post'
+      responses:
+        '201':
+          description: Post created successfully
+        '400':
+          description: Invalid input
+    get:
+      tags:
+        - Feeds
+      summary: Fetch news
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Post'
+  /users/{user_id}/chats:
+    get:
+      tags:
+        - Chat
+      summary: Fetch all dialogs/chats of user
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Chat'
+        '403':
+          description: Forbidden
+        '401':
+          description: Unauthorized
+  /users/{user_id}/chats/{chat_id}/messages:
+    get:
+      tags:
+        - Chat
+      summary: Fetch messages in a chat
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user
+          schema:
+            type: integer
+          required: true
+        - name: chat_id
+          description: ID of the chat
+          required: true
+          in: path
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '404':
+          description: Chat not found
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 88498321
+        full_name:
+          type: string
+          example: "John Doe"
+        username:
+          type: string
+          example: "johndoe123"
+        profile_picture_url:
+          type: string
+          format: url
+          example: "http://example.com/images/profile.jpg"
+        bio:
+          type: string
+          example: "Traveler, photographer, and coffee enthusiast."
+        status:
+          type: string
+          example: "Online"
+        created_at:
+          type: string
+          format: date-time
+          example: "2021-05-15T12:00:00Z"
+        last_online:
+          type: string
+          format: date-time
+          example: "2023-10-01T08:30:00Z"
+    Post:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 10
+        user_id:
+          type: integer
+          format: int64
+          example: 88498321
+        content:
+          type: string
+          example: "This is an example post"
+        media:
+          type: array
+          items:
+            type: string
+            format: url
+            example: "http://example.com/media/1"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2023-10-01T12:00:00Z"
+        likes_count:
+          type: integer
+          example: 124
+        comments_count:
+          type: integer
+          example: 15
+        is_edited:
+          type: boolean
+          example: false
+    Chat:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        last_message:
+          $ref: '#/components/schemas/Message'
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-09-28T08:00:00Z"
+        is_group_chat:
+          type: boolean
+          example: false
+        chat_name:
+          type: string
+          example: "Work Friends"
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        chat_id:
+          type: integer
+          format: int64
+          example: 1
+        sender_id:
+          type: integer
+          format: int64
+          example: 88498321
+        content:
+          type: string
+          example: "Hello, world!"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2023-10-01T12:00:00Z"
+        is_read:
+          type: boolean
+          example: true
+        is_edited:
+          type: boolean
+          example: false
