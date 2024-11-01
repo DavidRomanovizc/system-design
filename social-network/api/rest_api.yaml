@@ -219,6 +219,12 @@ paths:
       tags:
         - Chat
       summary: Fetch all dialogs/chats of user
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
       responses:
         '200':
           description: successful operation
